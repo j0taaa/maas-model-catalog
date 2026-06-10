@@ -1,0 +1,4 @@
+.git
+coverage
+test-results
+playwright-report
