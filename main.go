@@ -78,6 +78,8 @@ var catalog = Catalog{
 	},
 }
 
+const unlimitedPricingEnd = 1_000_000
+
 func main() {
 	healthcheck := flag.Bool("healthcheck", false, "check the local HTTP health endpoint")
 	flag.Parse()
@@ -191,13 +193,13 @@ func limits(contextWindow, maxInput, maxOutput int, maxReasoning *int) Limits {
 }
 
 func single(price float64) []PriceRange {
-	return []PriceRange{{Start: 0, End: nil, TokenPriceUSDPerMillion: price}}
+	return []PriceRange{{Start: 0, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: price}}
 }
 
 func tiered(lower, upper float64) []PriceRange {
 	return []PriceRange{
 		{Start: 0, End: ptr(31_999), TokenPriceUSDPerMillion: lower},
-		{Start: 32_000, End: nil, TokenPriceUSDPerMillion: upper},
+		{Start: 32_000, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: upper},
 	}
 }
 

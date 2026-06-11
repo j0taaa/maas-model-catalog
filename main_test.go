@@ -62,6 +62,9 @@ func TestPriceRanges(t *testing.T) {
 				if priceRange.End != nil && *priceRange.End < priceRange.Start {
 					t.Fatalf("%s %s range ends before it starts", model.Name, direction)
 				}
+				if priceRange.End == nil {
+					t.Fatalf("%s %s range end is nil; pricing ranges must use a numeric end", model.Name, direction)
+				}
 				if priceRange.TokenPriceUSDPerMillion <= 0 {
 					t.Fatalf("%s %s range has non-positive token price", model.Name, direction)
 				}
@@ -76,19 +79,19 @@ func TestTieredGLMPricing(t *testing.T) {
 
 	assertRanges(t, glm51.Pricing.Input, []PriceRange{
 		{Start: 0, End: ptr(31_999), TokenPriceUSDPerMillion: 0.809},
-		{Start: 32_000, End: nil, TokenPriceUSDPerMillion: 1.078},
+		{Start: 32_000, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: 1.078},
 	})
 	assertRanges(t, glm51.Pricing.Output, []PriceRange{
 		{Start: 0, End: ptr(31_999), TokenPriceUSDPerMillion: 3.235},
-		{Start: 32_000, End: nil, TokenPriceUSDPerMillion: 3.774},
+		{Start: 32_000, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: 3.774},
 	})
 	assertRanges(t, glm5.Pricing.Input, []PriceRange{
 		{Start: 0, End: ptr(31_999), TokenPriceUSDPerMillion: 0.539},
-		{Start: 32_000, End: nil, TokenPriceUSDPerMillion: 0.809},
+		{Start: 32_000, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: 0.809},
 	})
 	assertRanges(t, glm5.Pricing.Output, []PriceRange{
 		{Start: 0, End: ptr(31_999), TokenPriceUSDPerMillion: 2.426},
-		{Start: 32_000, End: nil, TokenPriceUSDPerMillion: 2.965},
+		{Start: 32_000, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: 2.965},
 	})
 }
 
