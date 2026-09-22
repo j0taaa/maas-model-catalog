@@ -67,14 +67,12 @@ var catalog = Catalog{
 	Currency:    "USD",
 	PricingUnit: "1M tokens",
 	Models: []Model{
+		model("DeepSeek-V4.1-Flash", "deepseek-v4.1-flash", single(0.3), single(1.2), limits(1_000_000, 1_000_000, 384_000, ptr(96_000))),
+		model("DeepSeek-V4-Flash", "deepseek-v4-flash", single(0.135), single(0.27), limits(1_000_000, 1_000_000, 384_000, ptr(96_000))),
 		model("DeepSeek-V4-Pro", "deepseek-v4-pro", single(1.617), single(3.235), limits(1_000_000, 1_000_000, 128_000, ptr(96_000))),
-		model("DeepSeek-V4-Flash", "deepseek-v4-flash", single(0.135), single(0.27), limits(1_000_000, 1_000_000, 128_000, ptr(96_000))),
-		model("DeepSeek-V3.2", "deepseek-v3.2", single(0.27), single(0.404), limits(160_000, 128_000, 32_000, ptr(32_000))),
-		model("DeepSeek-R1-0528", "deepseek-r1-0528", single(0.539), single(2.156), limits(128_000, 96_000, 32_000, ptr(32_000))),
-		model("DeepSeek-V3", "DeepSeek-V3", single(0.27), single(1.078), limits(128_000, 128_000, 32_000, nil)),
-		model("DeepSeek-V3.1-128K", "deepseek-v3.1-terminus", single(0.539), single(1.617), limits(128_000, 96_000, 32_000, ptr(32_000))),
 		model("GLM-5.1", "glm-5.1", tiered(0.809, 1.078), tiered(3.235, 3.774), limits(198_000, 192_000, 128_000, ptr(96_000))),
-		model("GLM-5", "glm-5", tiered(0.539, 0.809), tiered(2.426, 2.965), limits(198_000, 192_000, 64_000, ptr(64_000))),
+		model("GLM-5.2", "glm-5.2", single(1.4), single(4.4), limits(1_000_000, 1_000_000, 128_000, ptr(64_000))),
+		model("GLM-5.3", "glm-5.3", single(1.4), single(4.4), limits(1_000_000, 1_000_000, 128_000, ptr(128_000))),
 	},
 }
 

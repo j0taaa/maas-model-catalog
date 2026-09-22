@@ -26,14 +26,12 @@ func TestCatalogIncludesEndpoints(t *testing.T) {
 
 func TestCatalogIncludesRequestedModels(t *testing.T) {
 	expected := []string{
-		"DeepSeek-V4-Pro",
+		"DeepSeek-V4.1-Flash",
 		"DeepSeek-V4-Flash",
-		"DeepSeek-V3.2",
-		"DeepSeek-R1-0528",
-		"DeepSeek-V3",
-		"DeepSeek-V3.1-128K",
+		"DeepSeek-V4-Pro",
 		"GLM-5.1",
-		"GLM-5",
+		"GLM-5.2",
+		"GLM-5.3",
 	}
 
 	if len(catalog.Models) != len(expected) {
@@ -75,7 +73,6 @@ func TestPriceRanges(t *testing.T) {
 
 func TestTieredGLMPricing(t *testing.T) {
 	glm51 := findModel("glm-5.1")
-	glm5 := findModel("glm-5")
 
 	assertRanges(t, glm51.Pricing.Input, []PriceRange{
 		{Start: 0, End: ptr(31_999), TokenPriceUSDPerMillion: 0.809},
@@ -85,14 +82,47 @@ func TestTieredGLMPricing(t *testing.T) {
 		{Start: 0, End: ptr(31_999), TokenPriceUSDPerMillion: 3.235},
 		{Start: 32_000, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: 3.774},
 	})
-	assertRanges(t, glm5.Pricing.Input, []PriceRange{
-		{Start: 0, End: ptr(31_999), TokenPriceUSDPerMillion: 0.539},
-		{Start: 32_000, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: 0.809},
+
+}
+
+func TestGLM52Details(t *testing.T) {
+	glm52 := findModel("glm-5.2")
+
+	if glm52.Name != "GLM-5.2" {
+		t.Fatalf("name = %q, want %q", glm52.Name, "GLM-5.2")
+	}
+	assertRanges(t, glm52.Pricing.Input, []PriceRange{
+		{Start: 0, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: 1.40},
 	})
-	assertRanges(t, glm5.Pricing.Output, []PriceRange{
-		{Start: 0, End: ptr(31_999), TokenPriceUSDPerMillion: 2.426},
-		{Start: 32_000, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: 2.965},
+	assertRanges(t, glm52.Pricing.Output, []PriceRange{
+		{Start: 0, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: 4.40},
 	})
+	assertLimits(t, glm52.Limits, Limits{
+		ContextWindowTokens: 1_000_000,
+		MaxInputTokens:      1_000_000,
+		MaxOutputTokens:     128_000,
+		MaxReasoningTokens:  ptr(64_000),
+	})
+	assertStringSlice(t, glm52.Modalities.Input, []string{"text"})
+	assertStringSlice(t, glm52.Modalities.Output, []string{"text"})
+}
+
+func TestNewModelDetails(t *testing.T) {
+	for _, tc := range []struct {
+		id                      string
+		input, output           float64
+		maxOutput, maxReasoning int
+	}{
+		{"deepseek-v4.1-flash", 0.3, 1.2, 384_000, 96_000},
+		{"glm-5.3", 1.4, 4.4, 128_000, 128_000},
+	} {
+		t.Run(tc.id, func(t *testing.T) {
+			m := findModel(tc.id)
+			assertRanges(t, m.Pricing.Input, []PriceRange{{Start: 0, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: tc.input}})
+			assertRanges(t, m.Pricing.Output, []PriceRange{{Start: 0, End: ptr(unlimitedPricingEnd), TokenPriceUSDPerMillion: tc.output}})
+			assertLimits(t, m.Limits, Limits{ContextWindowTokens: 1_000_000, MaxInputTokens: 1_000_000, MaxOutputTokens: tc.maxOutput, MaxReasoningTokens: ptr(tc.maxReasoning)})
+		})
+	}
 }
 
 func TestRoutes(t *testing.T) {
@@ -116,7 +146,7 @@ func TestRoutes(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
 		t.Fatal(err)
 	}
-	if body.Provider != "Huawei Cloud" || body.Service != "MaaS" || len(body.Models) != 8 {
+	if body.Provider != "Huawei Cloud" || body.Service != "MaaS" || len(body.Models) != 6 {
 		t.Fatalf("unexpected /models body: provider=%q service=%q models=%d", body.Provider, body.Service, len(body.Models))
 	}
 
@@ -146,6 +176,37 @@ func findModel(id string) Model {
 		}
 	}
 	panic("model not found: " + id)
+}
+
+func assertLimits(t *testing.T, got, want Limits) {
+	t.Helper()
+	if got.ContextWindowTokens != want.ContextWindowTokens {
+		t.Fatalf("contextWindowTokens = %d, want %d", got.ContextWindowTokens, want.ContextWindowTokens)
+	}
+	if got.MaxInputTokens != want.MaxInputTokens {
+		t.Fatalf("maxInputTokens = %d, want %d", got.MaxInputTokens, want.MaxInputTokens)
+	}
+	if got.MaxOutputTokens != want.MaxOutputTokens {
+		t.Fatalf("maxOutputTokens = %d, want %d", got.MaxOutputTokens, want.MaxOutputTokens)
+	}
+	if (got.MaxReasoningTokens == nil) != (want.MaxReasoningTokens == nil) {
+		t.Fatalf("maxReasoningTokens = %v, want %v", got.MaxReasoningTokens, want.MaxReasoningTokens)
+	}
+	if got.MaxReasoningTokens != nil && *got.MaxReasoningTokens != *want.MaxReasoningTokens {
+		t.Fatalf("maxReasoningTokens = %d, want %d", *got.MaxReasoningTokens, *want.MaxReasoningTokens)
+	}
+}
+
+func assertStringSlice(t *testing.T, got, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("got %d values, want %d", len(got), len(want))
+	}
+	for index := range want {
+		if got[index] != want[index] {
+			t.Fatalf("value %d = %q, want %q", index, got[index], want[index])
+		}
+	}
 }
 
 func assertRanges(t *testing.T, got, want []PriceRange) {
